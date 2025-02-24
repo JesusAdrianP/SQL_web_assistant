@@ -4,12 +4,13 @@ from db_connection import DBConnection
 def get_db_columns_schema():
     db = DBConnection()
     db.generate_db_connection()
-    db.execute("""
+    cursor = db.get_db_cursor()
+    cursor.execute("""
         SELECT table_name, column_name, data_type 
         FROM information_schema.columns 
         WHERE table_schema = 'public'
     """)
-    columnas = db.fetchall()
+    columnas = cursor.fetchall()
     db.quit_db_connection()
     return columnas
 
@@ -18,14 +19,15 @@ def get_db_columns_schema():
 def get_db_pk_schema():
     db = DBConnection()
     db.generate_db_connection()
-    db.execute("""
+    cursor = db.get_db_cursor()
+    cursor.execute("""
         SELECT tc.table_name, kcu.column_name
         FROM information_schema.table_constraints AS tc
         JOIN information_schema.key_column_usage AS kcu
         ON tc.constraint_name = kcu.constraint_name
         WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = 'public'
     """)
-    pk_info = db.fetchall()
+    pk_info = cursor.fetchall()
     primary_keys = {table: column for table, column in pk_info}
     db.quit_db_connection()
     return primary_keys
@@ -34,7 +36,8 @@ def get_db_pk_schema():
 def get_db_fk_schema():
     db = DBConnection()
     db.generate_db_connection()
-    db.execute("""
+    cursor = db.get_db_cursor()
+    cursor.execute("""
         SELECT tc.table_name, kcu.column_name, ccu.table_name AS foreign_table, ccu.column_name AS foreign_column
         FROM information_schema.table_constraints AS tc
         JOIN information_schema.key_column_usage AS kcu

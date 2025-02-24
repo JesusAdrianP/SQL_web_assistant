@@ -27,6 +27,12 @@ class DBConnection:
     """
       cierra la conexión con la base de datos a la cual se le harán las consultas
     """
-    def quit_db_connection():
+    def quit_db_connection(self):
         self.cursor.close()
         self.conn.close()
+
+    def get_db_conn(self):
+        return self.conn
+    
+    def get_db_cursor(self):
+        return self.cursor
