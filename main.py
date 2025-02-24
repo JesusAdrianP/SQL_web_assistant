@@ -17,7 +17,7 @@ class QueryInput(BaseModel):
 
 @app.get("/")
 def read_root():
-    return {"Hello": "World"}
+    return {"Hello": "I am your sql assistant"}
 
 @app.post("/translate/")
 async def translate_to_sql(input_data: QueryInput):
