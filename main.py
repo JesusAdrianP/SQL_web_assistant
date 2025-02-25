@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
-from utils import parse_schema
+from utils import parse_schema #,translate_to_sql
+from db_connection import DBConnection
+from inputs import QueryInput
 
 app = FastAPI()
 
@@ -15,9 +17,6 @@ tokenizer = AutoTokenizer.from_pretrained(model_path)
 
 db_schema = parse_schema()
 
-class QueryInput(BaseModel):
-    query: str
-
 @app.get("/")
 def read_root():
     return {"Hello": "I am your sql assistant"}
@@ -30,3 +29,17 @@ async def translate_to_sql(input_data: QueryInput):
     outputs = model.generate(**model_inputs, max_length=512)
     output_text = tokenizer.batch_decode(outputs, skip_special_tokens=True)
     return {"sql_query": output_text[0]}
+    
+
+@app.post("/execute_query/")
+async def execute_query(input_data: QueryInput):
+    sql_query = await translate_to_sql(input_data)
+    db = DBConnection()
+    db.generate_db_connection()
+    cursor = db.get_db_cursor()
+    cursor.execute(f"""
+        {sql_query.get('sql_query')}
+    """)
+    query_result = cursor.fetchall()
+    db.quit_db_connection()
+    return {"query_result": query_result}

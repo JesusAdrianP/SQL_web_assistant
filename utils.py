@@ -1,4 +1,6 @@
 from db_connection import DBConnection
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+from inputs import QueryInput
 
 # Obtener las columnas de las tablas en el esquema 'public'
 def get_db_columns_schema():
@@ -76,3 +78,13 @@ def parse_schema():
     schema = ' [SEP] '.join(schema_parts)
 
     return schema
+
+""""
+def translate_to_sql(input_data: QueryInput):
+    nl_query = input_data.query
+    input_text = " ".join(["Question: ",nl_query, "Schema:", db_schema])
+    model_inputs = tokenizer(input_text, return_tensors="pt")
+    outputs = model.generate(**model_inputs, max_length=512)
+    output_text = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+    return output_text[0]
+"""
