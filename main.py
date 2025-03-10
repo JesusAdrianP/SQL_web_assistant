@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from utils import parse_schema #,translate_to_sql
+from utils import parse_schema, parse_gemini_response #,translate_to_sql
 from db_connection import DBConnection
 from inputs import QueryInput
 from ai_models import HuggingFaceModel, GoogleModel
@@ -16,6 +16,11 @@ db_schema = parse_schema()
 def read_root():
     return {"Hello": "I am your sql assistant"}
 
+
+"""
+Endpoint que llama al modelo de huggin face y devuelve la consulta en sintaxis SQL
+Recibe una consulta en lenguaje natural
+"""
 @app.post("/translate/")
 async def translate_to_sql(input_data: QueryInput):
     nl_query = input_data.query
@@ -28,10 +33,42 @@ async def translate_to_sql(input_data: QueryInput):
     output_text = tokenizer.batch_decode(outputs, skip_special_tokens=True)
     return {"sql_query": output_text[0]}
     
-
+"""
+Endpoint que ejecuta la consulta SQL generada por el modelo de hugging face
+Recibe la consulta en lenguaje natural, la traduce y la ejecuta
+"""
 @app.post("/execute_query/")
 async def execute_query(input_data: QueryInput):
     sql_query = await translate_to_sql(input_data)
+    db = DBConnection()
+    db.generate_db_connection()
+    cursor = db.get_db_cursor()
+    cursor.execute(f"""
+        {sql_query.get('sql_query')}
+    """)
+    query_result = cursor.fetchall()
+    db.quit_db_connection()
+    return {"query_result": query_result}
+
+"""
+Endpoint que llama al modelo Gemini de Google y devuelve la consulta en sintaxis SQL
+Recibe una consulta en lenguaje natural
+"""
+@app.post("/gemini_model/")
+async def call_gemini_model(input_data: QueryInput):
+    nl_query = input_data.query
+    gemini_model = GoogleModel()
+    response = gemini_model.call_SQL_asistant(NL_query=nl_query,schema=db_schema)
+
+    return {"sql_query": parse_gemini_response(response)}
+
+"""
+Endpoint que ejecuta la consulta SQL generada por el modelo Gemini de Google
+Recibe la consulta en lenguaje natural, la traduce y la ejecuta
+"""
+@app.post("/execute_gemini_query/")
+async def execute_gemini_query(input_data:QueryInput):
+    sql_query = await call_gemini_model(input_data=input_data)
     db = DBConnection()
     db.generate_db_connection()
     cursor = db.get_db_cursor()

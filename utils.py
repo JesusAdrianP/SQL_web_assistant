@@ -1,6 +1,7 @@
 from db_connection import DBConnection
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 from inputs import QueryInput
+import re
 
 # Obtener las columnas de las tablas en el esquema 'public'
 def get_db_columns_schema():
@@ -88,3 +89,10 @@ def translate_to_sql(input_data: QueryInput):
     output_text = tokenizer.batch_decode(outputs, skip_special_tokens=True)
     return output_text[0]
 """
+
+
+def parse_gemini_response(response_to_parse):
+    parsed_response = re.search(r'```sql\n(.*?)\n```', response_to_parse, re.DOTALL)
+    parsed_response = parsed_response.group(1)
+    parsed_response = parsed_response.replace("\n", " ").strip()
+    return parsed_response
