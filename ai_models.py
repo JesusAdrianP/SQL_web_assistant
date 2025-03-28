@@ -1,5 +1,9 @@
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 from google import genai
+import os
+
+from dotenv import load_dotenv
+load_dotenv()
 
 """
 This class is responsible for managing the Hugging Face model. 
@@ -41,7 +45,7 @@ class GoogleModel():
     Initializes the client of genai, with the api_key to be able to consume the model's api
     """
     def __init__(self):
-        self.client = genai.Client(api_key="AIzaSyCGFus3om-YiZwLJdWlhrwEnNg0JHNk2mo")
+        self.client = genai.Client(api_key=os.getenv('GOOGLE_API_KEY'))
 
     """
     Call the model to make the query
