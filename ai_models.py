@@ -2,12 +2,13 @@ from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 from google import genai
 
 """
-Esta clase se usa para manejar el modelo extraído de huggin face: https://huggingface.co/gaussalgo/T5-LM-Large-text2sql-spider
+This class is responsible for managing the Hugging Face model. 
+Extracted from: https://huggingface.co/gaussalgo/T5-LM-Large-text2sql-spider
 """
 class HuggingFaceModel():
     """
-    inicializa el path con la ruta de dónde se va a llamar el modelo
-    inicializa el modelo y el tokenizador
+    Initializes the path with the path of where the model is going to be called
+    Initializes the model and the tokenizer
     """
     def __init__(self):
         self.model_path = 'gaussalgo/T5-LM-Large-text2sql-spider'
@@ -15,38 +16,38 @@ class HuggingFaceModel():
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_path)
 
     """
-    Obtener el path del modelo
+    Get the path model
     """
     def get_path(self):
         return self.model_path
     
     """
-    Obtener el modelo
+    Get the model
     """
     def get_model(self):
         return self.model
     
     """
-    Obtener el tokenizador
+    Get the tokenizer
     """
     def get_tokenizer(self):
         return self.tokenizer
     
 """
-Clase para manejar el modelo de Gemini de Google
+This class is responsible for managing the Google model.
 """
 class GoogleModel():
     """
-    Inicializa el cliente de genai, con el api_key para poder consumir la api del modelo
+    Initializes the client of genai, with the api_key to be able to consume the model's api
     """
     def __init__(self):
         self.client = genai.Client(api_key="AIzaSyCGFus3om-YiZwLJdWlhrwEnNg0JHNk2mo")
 
     """
-    Llama al modelo para hacer la consulta
-    Parametros:
-              schema: el esquema de la base de datos
-              NL_query: consulta en lenguaje natural
+    Call the model to make the query
+    Parameters:
+        schema: the database schema
+        NL_query: natural language query
     """
     def call_SQL_asistant(self,NL_query, schema):
         SQL_query = self.client.models.generate_content(

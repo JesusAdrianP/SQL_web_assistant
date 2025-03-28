@@ -78,3 +78,8 @@ async def execute_gemini_query(input_data:QueryInput):
     query_result = cursor.fetchall()
     db.quit_db_connection()
     return {"query_result": query_result}
+
+
+@app.get("/schema/")
+def get_schema():
+    return {"schema": db_schema}

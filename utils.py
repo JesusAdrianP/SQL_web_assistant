@@ -11,10 +11,15 @@ def get_db_columns_schema():
     cursor.execute("""
         SELECT table_name, column_name, data_type 
         FROM information_schema.columns 
-        WHERE table_schema = 'public'
+        WHERE table_schema = 'ipro_bsn'
     """)
     columnas = cursor.fetchall()
+    cursor.execute("""
+        SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'ipro_bsn'
+    """)
+    tablas = cursor.fetchall()
     db.quit_db_connection()
+    print(tablas)
     return columnas
 
 
@@ -28,7 +33,7 @@ def get_db_pk_schema():
         FROM information_schema.table_constraints AS tc
         JOIN information_schema.key_column_usage AS kcu
         ON tc.constraint_name = kcu.constraint_name
-        WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = 'public'
+        WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = 'ipro_bsn'
     """)
     pk_info = cursor.fetchall()
     primary_keys = {table: column for table, column in pk_info}
@@ -47,7 +52,7 @@ def get_db_fk_schema():
         ON tc.constraint_name = kcu.constraint_name
         JOIN information_schema.constraint_column_usage AS ccu
         ON ccu.constraint_name = tc.constraint_name
-        WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = 'public'
+        WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = 'ipro_bsn'
     """)
     fk_info = cursor.fetchall()
     db.quit_db_connection()
@@ -58,6 +63,7 @@ def get_db_fk_schema():
 def parse_schema():
     foreign_keys = {}
     fk_info = get_db_fk_schema()
+    print("info",fk_info)
     for table, column, foreign_table, foreign_column in fk_info:
         foreign_keys.setdefault(table, []).append(f'foreign_key: "{column}" {foreign_column} from "{foreign_table}" "{foreign_column}"')
 

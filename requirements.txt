@@ -6,3 +6,4 @@ psycopg2==2.9.5
 psycopg2-binary==2.9.5
 python-dotenv==1.0.1
 google-genai==1.2.0
+translate==3.6.1
