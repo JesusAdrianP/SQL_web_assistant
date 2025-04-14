@@ -28,6 +28,7 @@ For running locally, yo need to follow these steps:
  DB_PASSWORD=db_password  
  DB_HOST=db_host  
  DB_PORT=db_port  
+ GOOGLE_API_KEY=your_api_key
 
 5. Finally, you can run the local server with the following instruction:
 
