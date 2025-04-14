@@ -28,7 +28,7 @@ async def translate_to_sql(input_data: QueryInput):
     init_model = HuggingFaceModel()
     tokenizer = init_model.get_tokenizer()
     model = init_model.get_model()
-    model_inputs = tokenizer(input_text, return_tensors="pt")
+    model_inputs = tokenizer(input_text, return_tensors="pt", truncation=True)
     outputs = model.generate(**model_inputs, max_length=512)
     output_text = tokenizer.batch_decode(outputs, skip_special_tokens=True)
     return {"sql_query": output_text[0]}
@@ -83,3 +83,18 @@ async def execute_gemini_query(input_data:QueryInput):
 @app.get("/schema/")
 def get_schema():
     return {"schema": db_schema}
+
+
+"""
+Endpoint que llama al modelo de huggin face y devuelve la consulta en sintaxis SQL
+Recibe una consulta en lenguaje natural
+"""
+@app.get("/tokens_quantity/")
+async def translate_to_sql():
+    nl_query = "some nl query"
+    input_text = " ".join(["Question: ",nl_query, "Schema:", db_schema])
+    init_model = HuggingFaceModel()
+    tokenizer = init_model.get_tokenizer()
+    model = init_model.get_model()
+    model_inputs = tokenizer.encode(input_text)
+    return {"tokens_quantity": len(model_inputs)}

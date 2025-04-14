@@ -2,24 +2,24 @@ from db_connection import DBConnection
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 from inputs import QueryInput
 import re
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Obtener las columnas de las tablas en el esquema 'public'
 def get_db_columns_schema():
     db = DBConnection()
     db.generate_db_connection()
     cursor = db.get_db_cursor()
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT table_name, column_name, data_type 
         FROM information_schema.columns 
-        WHERE table_schema = 'ipro_bsn'
+        WHERE table_schema = '{os.getenv('DB_SCHEMA')}'
     """)
     columnas = cursor.fetchall()
-    cursor.execute("""
-        SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'ipro_bsn'
-    """)
-    tablas = cursor.fetchall()
+    #print("estas son las tablas: ",columnas)
     db.quit_db_connection()
-    print(tablas)
     return columnas
 
 
@@ -28,15 +28,16 @@ def get_db_pk_schema():
     db = DBConnection()
     db.generate_db_connection()
     cursor = db.get_db_cursor()
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT tc.table_name, kcu.column_name
         FROM information_schema.table_constraints AS tc
         JOIN information_schema.key_column_usage AS kcu
         ON tc.constraint_name = kcu.constraint_name
-        WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = 'ipro_bsn'
+        WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = '{os.getenv('DB_SCHEMA')}'
     """)
     pk_info = cursor.fetchall()
     primary_keys = {table: column for table, column in pk_info}
+    #print("Estas son las claves primarias: ", len(primary_keys))
     db.quit_db_connection()
     return primary_keys
 
@@ -45,16 +46,21 @@ def get_db_fk_schema():
     db = DBConnection()
     db.generate_db_connection()
     cursor = db.get_db_cursor()
-    cursor.execute("""
-        SELECT tc.table_name, kcu.column_name, ccu.table_name AS foreign_table, ccu.column_name AS foreign_column
+    cursor.execute(f"""
+        SELECT tc.table_name, kcu.column_name, fk_column.data_type AS foreign_column_data_type, ccu.table_name AS foreign_table, ccu.column_name AS foreign_column
         FROM information_schema.table_constraints AS tc
         JOIN information_schema.key_column_usage AS kcu
         ON tc.constraint_name = kcu.constraint_name
         JOIN information_schema.constraint_column_usage AS ccu
         ON ccu.constraint_name = tc.constraint_name
-        WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = 'ipro_bsn'
+        JOIN information_schema.columns AS fk_column
+        ON fk_column.table_name = ccu.table_name AND fk_column.column_name = ccu.column_name
+        WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = '{os.getenv('DB_SCHEMA')}'
     """)
     fk_info = cursor.fetchall()
+    fk_info = list(set(fk_info))  # Eliminar duplicados
+    print("Estas son las nuevas claves foraneas: ", len(fk_info))
+    #print("Estas son las nuevas claves foraneas: ", fk_info)
     db.quit_db_connection()
     return fk_info
 
@@ -63,9 +69,9 @@ def get_db_fk_schema():
 def parse_schema():
     foreign_keys = {}
     fk_info = get_db_fk_schema()
-    print("info",fk_info)
-    for table, column, foreign_table, foreign_column in fk_info:
-        foreign_keys.setdefault(table, []).append(f'foreign_key: "{column}" {foreign_column} from "{foreign_table}" "{foreign_column}"')
+    #print("info",fk_info)
+    for table, column, column_type, foreign_table, foreign_column in fk_info:
+        foreign_keys.setdefault(table, []).append(f'foreign_key: "{column}" {column_type} from "{foreign_table}" "{foreign_column}"')
 
     tables = {}
     columnas = get_db_columns_schema()
