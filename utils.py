@@ -113,3 +113,4 @@ def parse_gemini_response(response_to_parse):
     parsed_response = parsed_response.group(1)
     parsed_response = parsed_response.replace("\n", " ").strip()
     return parsed_response
+

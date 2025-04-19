@@ -37,6 +37,41 @@ class HuggingFaceModel():
     def get_tokenizer(self):
         return self.tokenizer
     
+    """
+    This method count the tokens in a text data.
+    Is used to count the number of tokens in the schema and input query that was passed to the model
+    """
+    def count_tokens(self, input_data):
+        try:
+            tokenizer = self.get_tokenizer()
+            model_inputs = tokenizer.encode(input_data)
+            return len(model_inputs)
+        except Exception as e:
+            return f"""An error was ocurred: {e}"""
+    
+    """
+    Call the hugging face model to translate the nl query to SQL query
+    """
+    def call_translate_model(self, input_text):
+        try:
+            num_tokens = self.count_tokens(input_text)
+            if num_tokens > 512:
+                tokenizer = self.get_tokenizer()
+                model = self.get_model()
+                model_inputs = tokenizer(input_text, return_tensors="pt", truncation=True)
+                outputs = model.generate(**model_inputs, max_length=512)
+                output_text = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+                return output_text[0]
+            else:
+                tokenizer = self.get_tokenizer()
+                model = self.get_model()
+                model_inputs = tokenizer(input_text, return_tensors="pt")
+                outputs = model.generate(**model_inputs, max_length=512)
+                output_text = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+                return output_text[0]
+        except Exception as e:
+            return f"""An error was ocurred: {e}"""
+    
 """
 This class is responsible for managing the Google model.
 """
@@ -54,8 +89,11 @@ class GoogleModel():
         NL_query: natural language query
     """
     def call_SQL_asistant(self,NL_query, schema):
-        SQL_query = self.client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=f"based on this db schema {schema} give the SQL query to this natural language query:{NL_query}, just answer with de SQL query.",
+        try:
+            SQL_query = self.client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=f"based on this db schema {schema} give the SQL query to this natural language query:{NL_query}, just answer with de SQL query.",
             )
-        return SQL_query.text
+            return SQL_query.text
+        except Exception as e:
+            return f"""An error was ocurred: {e}"""
