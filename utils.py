@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Obtener las columnas de las tablas en el esquema 'public'
+# This method obtain the tables of the database schema
 def get_db_columns_schema():
     db = DBConnection()
     db.generate_db_connection()
@@ -17,13 +17,13 @@ def get_db_columns_schema():
         FROM information_schema.columns 
         WHERE table_schema = '{os.getenv('DB_SCHEMA')}'
     """)
-    columnas = cursor.fetchall()
+    columns = cursor.fetchall()
     #print("estas son las tablas: ",columnas)
     db.quit_db_connection()
-    return columnas
+    return columns
 
 
-# Obtener claves primarias
+# This method obtain the primary keys of the database
 def get_db_pk_schema():
     db = DBConnection()
     db.generate_db_connection()
@@ -41,7 +41,7 @@ def get_db_pk_schema():
     db.quit_db_connection()
     return primary_keys
 
-# Obtener claves foráneas
+# This method obtain the foreign keys of the database
 def get_db_fk_schema():
     db = DBConnection()
     db.generate_db_connection()
@@ -65,7 +65,9 @@ def get_db_fk_schema():
     return fk_info
 
 
-#Organiza el esquema de la bd en el formato que el modelo puede procesar
+#This method organize the database schema in a specific format, for the model processing
+#Format: table_name column1_name column1_type column2_name column2_type ... foreign_key: FK_name FK_type from table_name column_name primary key: column_name [SEP]
+#        table_name2 ...
 def parse_schema():
     foreign_keys = {}
     fk_info = get_db_fk_schema()
@@ -102,7 +104,10 @@ def translate_to_sql(input_data: QueryInput):
     return output_text[0]
 """
 
-
+"""
+This method parse the gemini response eliminating special characters, extra whithespaces and line breaks.
+Using RE library to implement regular expressions
+"""
 def parse_gemini_response(response_to_parse):
     parsed_response = re.search(r'```sql\n(.*?)\n```', response_to_parse, re.DOTALL)
     parsed_response = parsed_response.group(1)
