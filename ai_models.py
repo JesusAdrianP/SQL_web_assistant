@@ -56,13 +56,16 @@ class HuggingFaceModel():
         try:
             num_tokens = self.count_tokens(input_text)
             if num_tokens > 512:
+                print("Exceso de tokens")
                 tokenizer = self.get_tokenizer()
                 model = self.get_model()
+                print(tokenizer.model_max_length)
                 model_inputs = tokenizer(input_text, return_tensors="pt", truncation=True)
                 outputs = model.generate(**model_inputs, max_length=512)
                 output_text = tokenizer.batch_decode(outputs, skip_special_tokens=True)
                 return output_text[0]
             else:
+                print("Bien de tokens")
                 tokenizer = self.get_tokenizer()
                 model = self.get_model()
                 model_inputs = tokenizer(input_text, return_tensors="pt")
@@ -71,6 +74,41 @@ class HuggingFaceModel():
                 return output_text[0]
         except Exception as e:
             return f"""An error was ocurred: {e}"""
+        
+    def split_input_text(self, input_text):
+        tokenizer = self.get_tokenizer()
+        model = self.get_model()
+        
+        # 1. Tokenizamos el texto completo (sin agregar tokens especiales)
+        tokens = tokenizer.encode(input_text, add_special_tokens=False)
+        
+        # 2. Tamaño máximo (ajustado a lo que el modelo puede manejar)
+        max_input_tokens = tokenizer.model_max_length  # o el que sea válido para tu modelo
+        
+        # 3. Dividimos en chunks
+        chunks = [tokens[i:i+max_input_tokens] for i in range(0, len(tokens), max_input_tokens)]
+        
+        # 4. Generamos resultados para cada chunk
+        output_texts = []
+        for chunk in chunks:
+            # Volvemos a convertir a texto
+            chunk_text = tokenizer.decode(chunk)
+            # Tokenizamos el chunk como normalmente lo haces
+            model_inputs = tokenizer(chunk_text, return_tensors="pt", truncation=True, max_length=max_input_tokens)
+            
+            # Generación
+            outputs = model.generate(**model_inputs, max_length=512)
+            
+            # Decodificamos la salida
+            output_text = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
+            
+            output_texts.append(output_text)
+            
+            # 5. Unimos todo lo generado
+            final_output = " ".join(output_texts)
+            
+        return final_output
+
     
 """
 This class is responsible for managing the Google model.
