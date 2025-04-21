@@ -4,6 +4,7 @@ from inputs import QueryInput
 import re
 import os
 from dotenv import load_dotenv
+from ai_models import HuggingFaceModel
 
 load_dotenv()
 
@@ -129,3 +130,12 @@ def parse_gemini_response(response_to_parse):
 
 def search_column_in_schema():
     return True
+
+def count_tokens_in_string(nl_query, db_schema):
+    """
+    Count the number of tokens in a string using the tokenizer.
+    """
+    init_model = HuggingFaceModel()
+    input_text = " ".join(["Question: ",nl_query, "Schema:", db_schema])
+    tokens_input = init_model.count_tokens(input_text)
+    return tokens_input

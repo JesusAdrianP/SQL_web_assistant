@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 from utils import parse_schema, parse_gemini_response #,translate_to_sql
 from db_connection import DBConnection
-from inputs import QueryInput, LanguageInput
+from inputs import QueryInput, LanguageInput, TokensInput
 from ai_models import HuggingFaceModel, GoogleModel
 from translate_language import TranslateLanguage
 from language_config import LanguageConfig
+from utils import count_tokens_in_string
 
 app = FastAPI()
 
@@ -145,3 +146,26 @@ async def set_language(language: LanguageInput):
 @app.get("/get_language/")
 async def get_language():
     return { "setted_language": configurated_language.get_config_language()}
+
+@app.post("/number_tokens")
+async def get_number_tokens(input_data: TokensInput):
+    return { "number_of_tokens": count_tokens_in_string(input_data.query, input_data.db_schema) }
+
+
+@app.post("/translate_schema/")
+async def translate_to_sql(input_data: TokensInput):
+    try:
+        selected_language = await get_language()
+        if selected_language.get('setted_language').language == "Español":
+            nl_query = input_data.query
+            translator = TranslateLanguage()
+            translated_nl_query = translator.translate_to_english(input_data.query)
+            input_text = " ".join(["Question: ",translated_nl_query, "Schema:", input_data.db_schema])
+        else:
+            nl_query = input_data.query
+            input_text = " ".join(["Question: ",input_data.query, "Schema:", input_data.db_schema])
+        init_model = HuggingFaceModel()
+        response = init_model.call_translate_model(input_text=input_text)
+        return {"sql_query": response}
+    except Exception as e:
+        return {"An error was ocurred": f"error {e}" }

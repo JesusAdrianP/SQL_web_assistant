@@ -5,3 +5,7 @@ class QueryInput(BaseModel):
     
 class LanguageInput(BaseModel):
     language: str
+
+class TokensInput(BaseModel):
+    query: str
+    db_schema: str
