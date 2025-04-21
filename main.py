@@ -153,7 +153,7 @@ async def get_number_tokens(input_data: TokensInput):
 
 
 @app.post("/translate_schema/")
-async def translate_to_sql(input_data: TokensInput):
+async def test_translate_to_sql(input_data: TokensInput):
     try:
         selected_language = await get_language()
         if selected_language.get('setted_language').language == "Español":
