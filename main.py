@@ -6,8 +6,21 @@ from ai_models import HuggingFaceModel, GoogleModel
 from translate_language import TranslateLanguage
 from language_config import LanguageConfig
 from utils import count_tokens_in_string
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+origins = [
+    "localhost:8081",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 #db_schema = """
 #   "stadium" "Stadium_ID" int , "Location" text , "Name" text , "Capacity" int , "Highest" int , "Lowest" int , "Average" int , foreign_key:  primary key: "Stadium_ID" [SEP] "singer" "Singer_ID" int , "Name" text , "Country" text , "Song_Name" text , "Song_release_year" text , "Age" int , "Is_male" bool , foreign_key:  primary key: "Singer_ID" [SEP] "concert" "concert_ID" int , "concert_Name" text , "Theme" text , "Year" text , foreign_key: "Stadium_ID" text from "stadium" "Stadium_ID" , primary key: "concert_ID" [SEP] "singer_in_concert"  foreign_key: "concert_ID" int from "concert" "concert_ID" , "Singer_ID" text from "singer" "Singer_ID" , primary key: "concert_ID" "Singer_ID"
@@ -22,7 +35,7 @@ configurated_language = LanguageConfig()
 
 @app.get("/")
 def read_root():
-    return {"Hello": "I am your sql assistant"}
+    return {"message": "Hello, I am your sql assistant"}
 
 
 """
