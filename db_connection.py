@@ -55,6 +55,7 @@ class DBConnectionAPI():
     def __init__(self,db_name,db_user,db_password,db_host):
         self.conn = None
         self.cursor = None
+        self.db_schema = ""
         self.db_name = db_name
         self.db_user = db_user
         self.db_password = db_password
@@ -96,3 +97,9 @@ class DBConnectionAPI():
         self.db_user = db_user
         self.db_password = db_password
         self.db_host = db_host
+
+    def get_db_schema(self):
+        return self.db_schema
+
+    def set_db_schema(self, db_schema):
+        self.db_schema = db_schema

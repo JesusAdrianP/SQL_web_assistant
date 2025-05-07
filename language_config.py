@@ -6,7 +6,7 @@ class LanguageConfig():
         self.language = "Ingles"
         
     def get_config_language(self):
-        return self.language
+        return {"language": self.language}
     
     def set_language(self, new_language):
         self.language = new_language

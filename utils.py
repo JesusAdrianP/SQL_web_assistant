@@ -1,4 +1,4 @@
-from db_connection import DBConnection
+from db_connection import DBConnection, DBConnectionAPI
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 from inputs import QueryInput
 import re
@@ -8,11 +8,13 @@ from ai_models import HuggingFaceModel
 
 load_dotenv()
 
+db = DBConnectionAPI(db_host=None, db_name=None, db_password=None, db_user=None)
+
 # This method obtain the tables of the database schema
-def get_db_columns_schema():
+def get_db_columns_schema(db_host, db_name, db_password, db_user):
     try:
 
-        db = DBConnection()
+        db = DBConnectionAPI(db_host=db_host, db_name=db_name, db_password=db_password, db_user=db_user)
         db.generate_db_connection()
         cursor = db.get_db_cursor()
         cursor.execute(f"""
@@ -29,9 +31,9 @@ def get_db_columns_schema():
 
 
 # This method obtain the primary keys of the database
-def get_db_pk_schema():
+def get_db_pk_schema(db_host, db_name, db_password, db_user):
     try:
-        db = DBConnection()
+        db = DBConnectionAPI(db_host=db_host, db_name=db_name, db_password=db_password, db_user=db_user)
         db.generate_db_connection()
         cursor = db.get_db_cursor()
         cursor.execute(f"""
@@ -50,9 +52,9 @@ def get_db_pk_schema():
         return f"""An error was ocurred with the database: {e}"""
 
 # This method obtain the foreign keys of the database
-def get_db_fk_schema():
+def get_db_fk_schema(db_host, db_name, db_password, db_user):
     try:
-        db = DBConnection()
+        db = DBConnectionAPI(db_host=db_host, db_name=db_name, db_password=db_password, db_user=db_user)
         db.generate_db_connection()
         cursor = db.get_db_cursor()
         cursor.execute(f"""
@@ -78,20 +80,20 @@ def get_db_fk_schema():
 #This method organize the database schema in a specific format, for the model processing
 #Format: table_name column1_name column1_type column2_name column2_type ... foreign_key: FK_name FK_type from table_name column_name primary key: column_name [SEP]
 #        table_name2 ...
-def parse_schema():
+def parse_schema(db_host, db_name, db_password, db_user):
     foreign_keys = {}
     try:
-        fk_info = get_db_fk_schema()
+        fk_info = get_db_fk_schema(db_host, db_name, db_password, db_user)
         for table, column, column_type, foreign_table, foreign_column in fk_info:
             foreign_keys.setdefault(table, []).append(f'foreign_key: "{column}" {column_type} from "{foreign_table}" "{foreign_column}"')
 
         tables = {}
-        columnas = get_db_columns_schema()
+        columnas = get_db_columns_schema(db_host, db_name, db_password, db_user)
         for table, column, col_type in columnas:
             tables.setdefault(table, []).append(f'"{column}" {col_type}') 
 
         schema_parts = []
-        primary_keys = get_db_pk_schema()
+        primary_keys = get_db_pk_schema(db_host, db_name, db_password, db_user)
         for table, columns in tables.items():
             schema_line = f'"{table}" ' + " , ".join(columns)
             if table in primary_keys:
@@ -139,3 +141,20 @@ def count_tokens_in_string(nl_query, db_schema):
     input_text = " ".join(["Question: ",nl_query, "Schema:", db_schema])
     tokens_input = init_model.count_tokens(input_text)
     return tokens_input
+
+
+def identify_tables_in_query(query):
+    """
+    Identify the tables in the query using regex.
+    """
+    pattern = r'FROM\s+([a-zA-Z0-9_]+)'
+    matches = re.findall(pattern, query, re.IGNORECASE)
+    return matches
+
+def identify_columns_in_query(query):
+    """
+    Identify the columns in the query using regex.
+    """
+    pattern = r'SELECT\s+([a-zA-Z0-9_.,\s]+)\s+FROM'
+    matches = re.findall(pattern, query, re.IGNORECASE)
+    return matches[0].split(",") if matches else []
