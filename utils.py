@@ -155,6 +155,6 @@ def identify_columns_in_query(query):
     """
     Identify the columns in the query using regex.
     """
-    pattern = r'SELECT\s+([a-zA-Z0-9_.,\s]+)\s+FROM'
+    pattern = r'SELECT\s+([a-zA-Z0-9_()*.,\s]+)\s+FROM'
     matches = re.findall(pattern, query, re.IGNORECASE)
     return matches[0].split(",") if matches else []
