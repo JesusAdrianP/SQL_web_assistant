@@ -135,3 +135,9 @@ class GoogleModel():
             return SQL_query.text
         except Exception as e:
             return f"""An error was ocurred: {e}"""
+        
+        
+class SelectedModel():
+    
+    def __init__(self):
+        self.model = 'T5'

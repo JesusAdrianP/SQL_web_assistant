@@ -90,3 +90,9 @@ class DBConnectionAPI():
     """
     def get_db_cursor(self):
         return self.cursor
+      
+    def set_db_params(self, db_name,db_user,db_password,db_host):
+        self.db_name = db_name
+        self.db_user = db_user
+        self.db_password = db_password
+        self.db_host = db_host
