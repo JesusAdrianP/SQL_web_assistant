@@ -119,6 +119,17 @@ class GoogleModel():
     """
     def __init__(self):
         self.client = genai.Client(api_key=os.getenv('GOOGLE_API_KEY'))
+        self.promt = """
+        Your task is to generate a SQL query based on the following database schema and the provided natural language query.
+        Database schema:
+        {schema}
+        
+        Natural language query:
+        {NL_query}
+        
+        You must respond only with the valid SQL query that answers the question. Make sure that the table and column names in your SQL query exactly match those provided in the schema. Check the column types in the schema to construct a syntactically correct SQL query. Do not include any additional explanation or text in your answer.
+        Translated with DeepL.com (free version)
+        """
 
     """
     Call the model to make the query
@@ -130,7 +141,7 @@ class GoogleModel():
         try:
             SQL_query = self.client.models.generate_content(
                 model="gemini-2.0-flash",
-                contents=f"based on this db schema {schema} give the SQL query to this natural language query:{NL_query}, just answer with de SQL query.",
+                contents=self.promt.format(schema=schema, NL_query=NL_query),
             )
             return SQL_query.text
         except Exception as e:
