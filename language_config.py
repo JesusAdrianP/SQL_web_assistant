@@ -3,7 +3,7 @@ from pydantic import BaseModel
 class LanguageConfig():
     
     def __init__(self):
-        self.language = "Ingles"
+        self.language = "Español"
         
     def get_config_language(self):
         return {"language": self.language}
