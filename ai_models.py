@@ -121,14 +121,13 @@ class GoogleModel():
         self.client = genai.Client(api_key=os.getenv('GOOGLE_API_KEY'))
         self.promt = """
         Your task is to generate a SQL query based on the following database schema and the provided natural language query.
-        Database schema:
+        Postgres Database schema:
         {schema}
         
         Natural language query:
         {NL_query}
         
         You must respond only with the valid SQL query that answers the question. Make sure that the table and column names in your SQL query exactly match those provided in the schema. Check the column types in the schema to construct a syntactically correct SQL query. Do not include any additional explanation or text in your answer.
-        Translated with DeepL.com (free version)
         """
 
     """
