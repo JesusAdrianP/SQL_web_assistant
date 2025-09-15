@@ -8,8 +8,10 @@ from language_config import LanguageConfig
 from utils import count_tokens_in_string, identify_tables_in_query, identify_columns_in_query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import HTTPException, status
+from users import services
 
 app = FastAPI()
+app.include_router(services.router)
 
 origins = [
     "localhost:8081",

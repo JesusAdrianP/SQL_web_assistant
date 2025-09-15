@@ -1,7 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
+from fastapi import Depends
 import os
 from dotenv import load_dotenv
+from typing import Annotated
 
 load_dotenv()
 
@@ -24,3 +26,5 @@ def get_db():
 # Function to create the tables in the database     
 def create_tables():
     Base.metadata.create_all(bind=engine)
+    
+db_dependency = Annotated[SessionLocal, Depends(get_db)]
