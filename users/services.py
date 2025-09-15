@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from .schemas import UserBase, UserCreate, Token
 from fastapi.responses import JSONResponse
 from datetime import datetime, timedelta
-from .auth import authenticate_user, create_access_token
+from .auth import authenticate_user, create_access_token, get_current_user
 
 load_dotenv()
 
@@ -19,6 +19,8 @@ router = APIRouter(
     prefix="/users",
    tags=["users"]
 )
+
+user_dependency = Annotated[dict, Depends(get_current_user)]
 
 #Endpoint for user registration
 @router.post("/create_user", status_code=status.HTTP_201_CREATED)
@@ -47,3 +49,10 @@ async def login(db: db_dependency, form_data: Annotated[OAuth2PasswordRequestFor
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     access_token = create_access_token(user.email, user.id, timedelta(minutes=30))
     return {"access_token": access_token, "token_type": "bearer"}
+
+#Obtaining current user details
+@router.get("/me")
+async def get_user(db: db_dependency, user: user_dependency):
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication falied")
+    return {"email": user['email'], "id": user['id']}
