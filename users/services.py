@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from typing import Annotated
 from sqlalchemy.orm import Session
-from api_root.api_db import get_db, SessionLocal, db_dependency
+from api_root.api_db import get_db, SessionLocal, get_db_dependency
 from .models import User
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from .schemas import UserBase, UserCreate, Token
 from fastapi.responses import JSONResponse
 from datetime import datetime, timedelta
-from .auth import authenticate_user, create_access_token, get_current_user
+from .auth import authenticate_user, create_access_token, get_current_user, hash_password
 
 load_dotenv()
 
@@ -21,6 +21,7 @@ router = APIRouter(
 )
 
 user_dependency = Annotated[dict, Depends(get_current_user)]
+db_dependency = get_db_dependency()
 
 #Endpoint for user registration
 @router.post("/create_user", status_code=status.HTTP_201_CREATED)
@@ -30,7 +31,7 @@ async def create_user(db: db_dependency, user: UserCreate):
         user_instance = User(
             username=user.username,
             email=user.email,
-            password=bycrypt_context.hash(user.password)
+            password=hash_password(user.password)
         )
         #print("User instance created:", user_instance)
         db.add(user_instance)

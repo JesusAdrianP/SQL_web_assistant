@@ -28,3 +28,7 @@ def create_tables():
     Base.metadata.create_all(bind=engine)
     
 db_dependency = Annotated[SessionLocal, Depends(get_db)]
+
+# Function to get the db dependency
+def get_db_dependency():
+    return db_dependency
