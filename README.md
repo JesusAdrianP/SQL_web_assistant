@@ -33,3 +33,9 @@ For running locally, yo need to follow these steps:
 5. Finally, you can run the local server with the following instruction:
 
  uvicorn main:app --reload
+
+Commands to run migrations:
+
+- To create migrations: alembic revision --autogenerate -m "migrations details"
+
+- To run migrations and applicate changes: alembic upgrade head

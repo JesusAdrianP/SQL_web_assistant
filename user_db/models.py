@@ -11,4 +11,4 @@ class UserDB(Base):
     db_user = Column(String, index=True)
     db_host = Column(String, index=True)
     db_schema = Column(String, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)

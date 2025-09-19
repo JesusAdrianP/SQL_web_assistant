@@ -1,5 +1,5 @@
 from api_root.api_db import Base
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean
 
 #creating the User model for the users table in the database
 class User(Base):
@@ -9,3 +9,4 @@ class User(Base):
     username = Column(String, index=True)
     email = Column(String, unique=True, index=True)
     password = Column(String)
+    is_superuser = Column(Boolean, default=False, index=True)
