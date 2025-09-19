@@ -8,10 +8,12 @@ from language_config import LanguageConfig
 from utils import count_tokens_in_string, identify_tables_in_query, identify_columns_in_query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import HTTPException, status
-from users import views
+from users import views as user_views
+from ai_model import views as ai_model_views
 
 app = FastAPI()
-app.include_router(views.router)
+app.include_router(user_views.router)
+app.include_router(ai_model_views.router)
 
 origins = [
     "localhost:8081",

@@ -31,7 +31,8 @@ async def create_user(db: db_dependency, user: UserCreate):
         user_instance = User(
             username=user.username,
             email=user.email,
-            password=hash_password(user.password)
+            password=hash_password(user.password),
+            is_superuser=user.is_superuser
         )
         #print("User instance created:", user_instance)
         db.add(user_instance)

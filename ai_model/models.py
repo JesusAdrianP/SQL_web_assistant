@@ -7,4 +7,4 @@ class AIModel(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     model_name = Column(String, index=True)
-    performance = Column(DECIMAL)
+    performance = Column(DECIMAL, nullable=True, default=0.0)
