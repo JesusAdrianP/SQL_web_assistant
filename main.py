@@ -10,10 +10,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import HTTPException, status
 from users import views as user_views
 from ai_model import views as ai_model_views
+from user_db import views as user_db_views
+from query import views as query_views
 
 app = FastAPI()
 app.include_router(user_views.router)
 app.include_router(ai_model_views.router)
+app.include_router(user_db_views.router)
+app.include_router(query_views.router)
 
 origins = [
     "localhost:8081",
