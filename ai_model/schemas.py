@@ -14,3 +14,6 @@ class AIModelRead(AIModelBase):
     model_config = {
         "from_attributes": True
     }
+    
+class AIModelUpdate(BaseModel):
+    performance: float
