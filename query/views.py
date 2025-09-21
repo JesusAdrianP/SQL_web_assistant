@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from typing import Annotated
 from api_root.api_db import get_db_dependency
 from .models import Query
-from .schemas import  QueryCreate
+from .schemas import  QueryCreate, QueryUpdate
 from fastapi.responses import JSONResponse
 from users.auth import get_current_user
 
@@ -46,4 +46,22 @@ async def get_user_queries(db: db_dependency, user: user_dependency, user_db_id:
         queries = db.query(Query).filter(Query.user_id == user.get("id"), Query.user_db_id == user_db_id).all()
         return queries
     except Exception as e:
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"{e}"})
+
+#Endpoint to update the correctness of a specific query
+@router.put("/update_query/{query_id}", status_code=status.HTTP_200_OK)
+async def update_query(db: db_dependency, user: user_dependency, query_id: int, query: QueryUpdate):
+    try:
+        if user is None or user.get("id") is None:
+            return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"error": "Authentication failed"})
+        query_instance = db.query(Query).filter(Query.id == query_id, Query.user_id == user.get("id")).first()
+        if not query_instance:
+            return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"error": "Query not found"})
+        if query.is_correct is not None:
+            query_instance.is_correct = query.is_correct
+        db.commit()
+        db.refresh(query_instance)
+        return {"message": "Query updated successfully"}
+    except Exception as e:
+        db.rollback()
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"{e}"})

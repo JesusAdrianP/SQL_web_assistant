@@ -18,3 +18,6 @@ class QueryRead(QueryBase):
     model_config = {
         "from_attributes": True
     }
+
+class QueryUpdate(BaseModel):
+    is_correct: bool|None = None
