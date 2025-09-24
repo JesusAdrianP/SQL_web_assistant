@@ -1,10 +1,14 @@
 from fastapi import APIRouter, HTTPException, status, Depends
-from typing import Annotated
+from fastapi import Query as FastAPIQuery
+from typing import Annotated, Optional
 from api_root.api_db import get_db_dependency
 from .models import Query
 from .schemas import  QueryCreate, QueryUpdate
 from fastapi.responses import JSONResponse
 from users.auth import get_current_user
+from users.models import User
+from ai_model.models import AIModel
+from user_db.models import UserDB
 
 router = APIRouter(
     prefix="/queries",
@@ -38,13 +42,30 @@ async def create_query(db: db_dependency, user: user_dependency, query: QueryCre
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"{e}"})
     
 #Endpoint to get all queries for the authenticated user and specific user database
-@router.get("/user_queries/{user_db_id}", status_code=status.HTTP_200_OK)
-async def get_user_queries(db: db_dependency, user: user_dependency, user_db_id: int):
+@router.get("/user_queries", status_code=status.HTTP_200_OK)
+async def get_user_queries(db: db_dependency, user: user_dependency, user_db_id: Optional[int] = FastAPIQuery(None)):
     try:
         if user is None or user.get("id") is None:
             return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"error": "Authentication failed"})
-        queries = db.query(Query).filter(Query.user_id == user.get("id"), Query.user_db_id == user_db_id).all()
-        return queries
+        
+        if user_db_id is None:
+            queries = db.query(Query, AIModel.model_name, UserDB.db_name).join(AIModel, AIModel.id == Query.ai_model_id).join(UserDB, UserDB.id == Query.user_db_id).filter(Query.user_id == user.get("id")).all()
+        else:
+            queries = db.query(Query, AIModel.model_name, UserDB.db_name).join(AIModel, AIModel.id == Query.ai_model_id).join(UserDB, UserDB.id == Query.user_db_id).filter(Query.user_id == user.get("id"), Query.user_db_id == user_db_id).all()
+        response = []
+        for query, model, user_db in queries:
+            response.append({
+                "id": query.id,
+                "nl_query": query.nl_query,
+                "sql_query": query.sql_query,
+                "user_id": query.user_id,
+                "is_correct": query.is_correct,
+                "ai_model_id": query.ai_model_id,
+                "ai_model_name": model,
+                "user_db_id": query.user_db_id,
+                "user_db_name": user_db,
+            })
+        return response
     except Exception as e:
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"{e}"})
 
