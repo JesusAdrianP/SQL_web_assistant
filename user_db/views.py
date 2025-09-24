@@ -73,3 +73,14 @@ async def update_user_db(user_db_id: int, db: db_dependency, user: user_dependen
     except Exception as e:
         db.rollback()
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"{e}"})
+    
+#Endpoint to get all user databases for the authenticated user
+@router.get("/user_dbs_names", status_code=status.HTTP_200_OK)
+async def get_user_dbs_names(db: db_dependency, user: user_dependency):
+    try:
+        if user is None or user.get("id") is None:
+            return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"error": "Authentication failed"})
+        user_dbs = db.query(UserDB.id, UserDB.db_name).filter(UserDB.user_id == user.get("id")).all()
+        return [{"id": db.id, "db_name": db.db_name} for db in user_dbs]
+    except Exception as e:
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"{e}"})
