@@ -55,8 +55,8 @@ async def get_user_dbs(db: db_dependency, user: user_dependency):
     try:
         if user is None or user.get("id") is None:
             return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"error": "Authentication failed"})
-        user_dbs = db.query(UserDB).filter(UserDB.user_id == user.get("id")).all()
-        return user_dbs
+        user_dbs = db.query(UserDB.id, UserDB.db_name, UserDB.created_at, UserDB.db_host, UserDB.db_port, UserDB.db_schema, UserDB.db_user).filter(UserDB.user_id == user.get("id")).all()
+        return [{"id": db.id, "db_name": db.db_name, "db_user": db.db_user, "db_host": db.db_host,"db_port": db.db_port,"db_schema": db.db_schema,"created_at": db.created_at} for db in user_dbs]
     except Exception as e:
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"{e}"})
     
