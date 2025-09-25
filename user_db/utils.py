@@ -2,6 +2,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 import os
 import asyncpg
 from .models import UserDB
+from asyncpg import connect as test_pg_connect
 
 class CryptoService:
     def __init__(self):
@@ -34,6 +35,26 @@ async def connect_to_user_db(user_db_link: UserDB, crypto_service: CryptoService
         ssl="require"  
     )
     return conn
+
+async def test_user_db_connection(db_user,db_name,db_host,db_port, encrypted_password):
+    try:
+        crypto = CryptoService()
+        
+        db_password = crypto.decrypt(encrypted_password)
+        print("crypted password:", encrypted_password)
+        print("Decrypted password:", db_password)
+        conn = await test_pg_connect(
+            user=db_user,
+            password=db_password,
+            database=db_name,
+            host=db_host,
+            port=db_port,
+            ssl="disable"
+        )
+        await conn.close()
+        return {"message": "Connection successful", "successful": True}
+    except Exception as e:
+        return {"messsage":"Connection failed", "successful":False}
 
 """
 @router.post("/chat")

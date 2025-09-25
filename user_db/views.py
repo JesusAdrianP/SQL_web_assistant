@@ -5,7 +5,7 @@ from .models import UserDB
 from .schemas import UserDbCreate, UserDbUpdate
 from fastapi.responses import JSONResponse
 from users.auth import get_current_user
-from .utils import CryptoService
+from .utils import CryptoService, test_user_db_connection
 from asyncpg import connect as test_pg_connect
 
 router = APIRouter(
@@ -27,19 +27,24 @@ async def register_db(db: db_dependency, user: user_dependency, user_db: UserDbC
         crypto = CryptoService()
         encrypted_password = crypto.encrypt(user_db.db_password)
         
-        user_db_instance = UserDB(
-            user_id=user.get("id"),
-            db_name=user_db.db_name,
-            db_port=user_db.db_port,
-            db_user=user_db.db_user,
-            db_host=user_db.db_host,
-            db_schema=user_db.db_schema,
-            encrypted_password=encrypted_password
-        )
-        db.add(user_db_instance)
-        db.commit()
-        db.refresh(user_db_instance)
-        return {"message": "User database registered successfully", "db_name": user_db_instance.db_name}
+        db_connection = await test_user_db_connection(user_db.db_user,user_db.db_name,user_db.db_host,user_db.db_port, encrypted_password)
+        
+        if db_connection.get("successful"):
+            user_db_instance = UserDB(
+                user_id=user.get("id"),
+                db_name=user_db.db_name,
+                db_port=user_db.db_port,
+                db_user=user_db.db_user,
+                db_host=user_db.db_host,
+                db_schema=user_db.db_schema,
+                encrypted_password=encrypted_password
+            )
+            db.add(user_db_instance)
+            db.commit()
+            db.refresh(user_db_instance)
+            return {"message": "User database registered successfully", "db_name": user_db_instance.db_name}
+        else:
+            return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error":"database connection failed"})
     except Exception as e:
         db.rollback()
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"{e}"})
@@ -106,7 +111,7 @@ async def test_db_connection(db_id: int, db: db_dependency):
             database=user_db_instance.db_name,
             host=user_db_instance.db_host,
             port=user_db_instance.db_port,
-            ssl="require"
+            ssl="disable"
         )
         await conn.close()
         return {"message": "Connection successful"}
