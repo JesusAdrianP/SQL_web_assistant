@@ -10,7 +10,7 @@ class UserDbBase(BaseModel):
     db_schema: str
 
 class UserDbCreate(UserDbBase):
-    pass
+    db_password: str
 
 class UserDbRead(UserDbBase):
     id: int

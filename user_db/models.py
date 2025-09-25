@@ -1,5 +1,5 @@
 from api_root.api_db import Base
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, func
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, func, LargeBinary
 
 #creating the user_db model for the user_db table in the database
 class UserDB(Base):
@@ -13,3 +13,4 @@ class UserDB(Base):
     db_schema = Column(String, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    encrypted_password = Column(LargeBinary)  # Store encrypted password
