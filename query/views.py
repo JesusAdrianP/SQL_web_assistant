@@ -14,7 +14,7 @@ from inputs import QueryInput
 from user_db.utils import CryptoService, parse_schema
 from user_db.models import UserDB
 from utils import identify_columns_in_query
-from .utils import call_gemini_model, translate_to_sql
+from .utils import call_gemini_model, translate_to_sql, execute_generated_sql_query
 
 router = APIRouter(
     prefix="/queries",
@@ -46,6 +46,38 @@ async def create_query(db: db_dependency, user: user_dependency, query: QueryCre
     except Exception as e:
         db.rollback()
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"{e}"})
+    
+#Endpoint to get specific query from user
+@router.get("/user_queries/{query_id}", status_code=status.HTTP_200_OK)
+async def get_user_query(db:db_dependency, user:user_dependency, query_id: int):
+    try:
+        if user is None or user.get("id") is None:
+            return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"error":"Authentication failed"})
+        
+        if query_id is None:
+            return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error":"Invalid query id"})
+        
+        query = db.query(Query, AIModel.model_name, UserDB.db_name).join(AIModel, AIModel.id == Query.ai_model_id).join(UserDB, UserDB.id == Query.user_db_id).filter(Query.user_id == user.get("id"), Query.id ==query_id).first()
+        user_db = db.query(UserDB).filter(UserDB.id == query[0].user_db_id).first()
+        crypto_service = CryptoService()
+        query_result = await execute_generated_sql_query(query[0].sql_query,user_db,crypto_service)
+        
+        response = {
+            "id": query[0].id,
+            "nl_query": query[0].nl_query,
+            "sql_query": query[0].sql_query,
+            "user_id": query[0].user_id,
+            "is_correct": query[0].is_correct,
+            "ai_model_id": query[0].ai_model_id,
+            "ai_model_name": query[1],
+            "user_db_id": query[0].user_db_id,
+            "user_db_name": query[2],
+            "query_result": query_result
+        }
+        return response
+    except Exception as e:
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"{e}"})       
+        
     
 #Endpoint to get all queries for the authenticated user and specific user database
 @router.get("/user_queries", status_code=status.HTTP_200_OK)

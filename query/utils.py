@@ -1,7 +1,8 @@
 from ai_models import GoogleModel, HuggingFaceModel
 from language_config import LanguageConfig
 from translate_language import TranslateLanguage
-from utils import parse_gemini_response
+from utils import parse_gemini_response, identify_columns_in_query
+from user_db.utils import connect_to_user_db
 
 configurated_language = LanguageConfig()
 
@@ -38,3 +39,19 @@ async def translate_to_sql(nl_query, db_schema):
         return {"sql_query": response}
     except Exception as e:
         return {"sql_query": None, "error" :f"{e}"}
+    
+    
+async def execute_generated_sql_query(sql_query, user_db, crypto_service):
+    try:
+        user_db_connection = await connect_to_user_db(user_db, crypto_service)
+        cursor = user_db_connection.cursor()
+        cursor.execute(f"""
+                       {sql_query}
+                       """)
+        query_result = cursor.fetchall()
+        cursor.close()
+        user_db_connection.close()
+        print("obtained query:", sql_query)
+        return {"query_result": query_result, "columns": identify_columns_in_query(sql_query)}
+    except Exception as e:
+        return {"query_result": None, "error": f"{e}"}
