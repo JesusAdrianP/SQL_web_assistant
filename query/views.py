@@ -14,7 +14,7 @@ from inputs import QueryInput
 from user_db.utils import CryptoService, parse_schema
 from user_db.models import UserDB
 from utils import identify_columns_in_query
-from .utils import call_gemini_model, translate_to_sql, execute_generated_sql_query
+from .utils import call_gemini_model, translate_to_sql, execute_generated_sql_query, call_deepseek_model
 
 router = APIRouter(
     prefix="/queries",
@@ -215,3 +215,18 @@ async def execute_query(db:db_dependency, input_data: QueryCreate, user:user_dep
             return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error":"The model is not responding"})
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"An error was ocurred: {e}")
+    
+
+@router.post("/deepseek/translate_query")
+async def ds_translate_query(db:db_dependency, input_data:QueryInput, user:user_dependency):
+    try:
+        if user is None or user.get("id") is None:
+            return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"error": "Authentication failed"})
+        crypto_service = CryptoService()
+        user_db_link = db.query(UserDB).filter(UserDB.id==input_data.user_db_id).first()
+        parsed_schema = await parse_schema(user_db_link=user_db_link, crypto_service=crypto_service)
+        sql_query = await call_deepseek_model(nl_query=input_data.query, db_schema=parsed_schema)
+        print("sql_query: ", sql_query)
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"sql_query": sql_query.get('sql_query')})
+    except Exception as e:
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"{e}"})

@@ -2,6 +2,7 @@ from pydantic import BaseModel
 
 class QueryInput(BaseModel):
     query: str
+    user_db_id: int
     
 class LanguageInput(BaseModel):
     language: str
