@@ -14,7 +14,7 @@ from inputs import QueryInput
 from user_db.utils import CryptoService, parse_schema
 from user_db.models import UserDB
 from utils import identify_columns_in_query
-from .utils import call_gemini_model, translate_to_sql, execute_generated_sql_query, call_deepseek_model
+from .utils import call_gemini_model, translate_to_sql, execute_generated_sql_query, call_deepseek_model, serialize_decimal
 
 router = APIRouter(
     prefix="/queries",
@@ -141,6 +141,7 @@ async def execute_gemini_query(db:db_dependency, input_data:QueryCreate, user:us
         user_db_link = db.query(UserDB).filter(UserDB.id == input_data.user_db_id).first()
         parsed_schema = await parse_schema(user_db_link=user_db_link, crypto_service=crypto_service)
         sql_query = await call_gemini_model(nl_query=input_data.nl_query, db_schema=parsed_schema)
+        print("sql_query: ", sql_query.get("sql_query"))
         if sql_query.get("sql_query"):
             query_instance = Query(
                 nl_query=input_data.nl_query,
@@ -154,15 +155,18 @@ async def execute_gemini_query(db:db_dependency, input_data:QueryCreate, user:us
             db.commit()
             db.refresh(query_instance)
             try:
+                print("indetify columns:", identify_columns_in_query(sql_query.get('sql_query')))
                 user_db = await connect_to_user_db(user_db_link, crypto_service)
                 cursor = user_db.cursor()
                 cursor.execute(f"""
                            {sql_query.get('sql_query')}
                            """)
                 query_result = cursor.fetchall()
+                print("query result:", query_result)
                 cursor.close()
                 user_db.close()
-                return JSONResponse(status_code=status.HTTP_200_OK,content={"query_result": query_result, "columns": identify_columns_in_query(sql_query.get('sql_query'))})
+                serialized_result = [[serialize_decimal(value) for value in item] for item in query_result]
+                return JSONResponse(status_code=status.HTTP_200_OK,content={"query_result": serialized_result, "columns": identify_columns_in_query(sql_query.get('sql_query'))})
             except Exception as e:
                 return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"An error was occurred with database connection or sql query executed: {e}"})
         else:
@@ -216,8 +220,51 @@ async def execute_query(db:db_dependency, input_data: QueryCreate, user:user_dep
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"An error was ocurred: {e}")
     
+    
+@router.post("/deepseek/execute_query/")
+async def execute_deepseek_query(db:db_dependency, input_data:QueryCreate, user:user_dependency):
+    try:
+        if user is None or user.get("id") is None:
+            return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"error": "Authentication failed"})
+        crypto_service = CryptoService()
+        user_db_link = db.query(UserDB).filter(UserDB.id == input_data.user_db_id).first()
+        parsed_schema = await parse_schema(user_db_link=user_db_link, crypto_service=crypto_service)
+        sql_query = await call_deepseek_model(nl_query=input_data.nl_query, db_schema=parsed_schema)
+        print("sql_query: ", sql_query.get("sql_query"))
+        if sql_query.get("sql_query"):
+            query_instance = Query(
+                nl_query=input_data.nl_query,
+                sql_query=sql_query.get("sql_query"),
+                is_correct=input_data.is_correct,
+                user_id=user.get("id"),
+                ai_model_id=input_data.ai_model_id,
+                user_db_id=input_data.user_db_id
+            )
+            db.add(query_instance)
+            db.commit()
+            db.refresh(query_instance)
+            try:
+                print("indetify columns:", identify_columns_in_query(sql_query.get('sql_query')))
+                user_db = await connect_to_user_db(user_db_link, crypto_service)
+                cursor = user_db.cursor()
+                cursor.execute(f"""
+                           {sql_query.get('sql_query')}
+                           """)
+                query_result = cursor.fetchall()
+                print("query result:", query_result)
+                cursor.close()
+                user_db.close()
+                serialized_result = [[serialize_decimal(value) for value in item] for item in query_result]
+                return JSONResponse(status_code=status.HTTP_200_OK,content={"query_result": serialized_result, "columns": identify_columns_in_query(sql_query.get('sql_query'))})
+            except Exception as e:
+                return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"An error was occurred with database connection or sql query executed: {e}"})
+        else:
+            JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error":"The model is not responding"})
+    except Exception as e:
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error":f"An error was ocurred: {e}"})
+    
 
-@router.post("/deepseek/translate_query")
+"""@router.post("/deepseek/translate_query")
 async def ds_translate_query(db:db_dependency, input_data:QueryInput, user:user_dependency):
     try:
         if user is None or user.get("id") is None:
@@ -229,4 +276,4 @@ async def ds_translate_query(db:db_dependency, input_data:QueryInput, user:user_
         print("sql_query: ", sql_query)
         return JSONResponse(status_code=status.HTTP_200_OK, content={"sql_query": sql_query.get('sql_query')})
     except Exception as e:
-        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"{e}"})
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"{e}"})"""

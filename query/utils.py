@@ -3,6 +3,7 @@ from language_config import LanguageConfig
 from translate_language import TranslateLanguage
 from utils import parse_gemini_response, identify_columns_in_query
 from user_db.utils import connect_to_user_db
+from decimal import Decimal
 
 configurated_language = LanguageConfig()
 
@@ -69,3 +70,8 @@ async def execute_generated_sql_query(sql_query, user_db, crypto_service):
         return {"query_result": query_result, "columns": identify_columns_in_query(sql_query)}
     except Exception as e:
         return {"query_result": None, "error": f"{e}"}
+    
+def serialize_decimal(obj):
+    if isinstance(obj, Decimal):
+        return float(obj)
+    return obj
