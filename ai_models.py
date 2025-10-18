@@ -1,6 +1,7 @@
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 from google import genai
 import os
+from openai import OpenAI
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -143,6 +144,49 @@ class GoogleModel():
                 contents=self.promt.format(schema=schema, NL_query=NL_query),
             )
             return SQL_query.text
+        except Exception as e:
+            return f"""An error was ocurred: {e}"""
+        
+        
+"""
+This class is responsible for managing the Google model.
+"""
+class DeepSeekModel():
+    """
+    Initializes the client of openai, with the api_key to be able to consume the model's api
+    """
+    def __init__(self):
+        self.client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=os.getenv('DEEPSEEK_API_KEY'))
+        self.promt = """
+        Your task is to generate a SQL query based on the following database schema and the provided natural language query.
+        Postgres Database schema:
+        {schema}
+        
+        Natural language query:
+        {NL_query}
+        
+        You must respond only with the valid SQL query that answers the question. Make sure that the table and column names in your SQL query exactly match those provided in the schema. Check the column types in the schema to construct a syntactically correct SQL query. Do not include any additional explanation or text in your answer.
+        """
+
+    """
+    Call the model to make the query
+    Parameters:
+        schema: the database schema
+        NL_query: natural language query
+    """
+    def call_SQL_asistant(self,NL_query, schema):
+        try:
+            completion = self.client.chat.completions.create(
+                model="deepseek/deepseek-chat-v3.1:free",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": self.promt.format(schema=schema, NL_query=NL_query)
+                    }
+                ],
+            )
+            SQL_query = completion.choices[0].message.content
+            return SQL_query
         except Exception as e:
             return f"""An error was ocurred: {e}"""
         

@@ -8,10 +8,9 @@ class UserDbBase(BaseModel):
     db_user: str
     db_host: str
     db_schema: str
-    user_id: int
 
 class UserDbCreate(UserDbBase):
-    pass
+    db_password: str
 
 class UserDbRead(UserDbBase):
     id: int

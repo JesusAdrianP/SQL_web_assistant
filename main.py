@@ -5,7 +5,7 @@ from inputs import QueryInput, LanguageInput, TokensInput, DBInput
 from ai_models import HuggingFaceModel, GoogleModel
 from translate_language import TranslateLanguage
 from language_config import LanguageConfig
-from utils import count_tokens_in_string, identify_tables_in_query, identify_columns_in_query
+from utils import count_tokens_in_string, identify_tables_in_query, identify_columns_in_query, get_db_tables_schema, identify_tables_by_parts, parse_schema2
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import HTTPException, status
 from users import views as user_views
@@ -231,3 +231,30 @@ async def generate_db_connection(input_data: DBInput):
         return {"message": "DB connection generated"}
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error generating DB connection: {e}")
+    
+@app.post("/identify_tables/")
+async def identify_tables(input_data: TokensInput):
+    try:
+        translator = TranslateLanguage()
+        translated_nl_query = translator.translate_to_english(input_data.query)
+        tables_list = get_db_tables_schema(db=db)
+        flattened_tables = [table for sublist in tables_list for table in sublist]
+        important_tables = identify_tables_by_parts(translated_nl_query, flattened_tables)
+        print("important tables:", important_tables)
+        if len(important_tables) == 0:
+            important_tables = identify_tables_by_parts(input_data.query, flattened_tables)
+            print("intentando con nl query original: ", important_tables)
+        important_tables = list(set(important_tables))
+        simplified_schema = parse_schema2(db=db, relevant_tables=important_tables)
+        input_text = " ".join(["Question: ",translated_nl_query, "Schema:", simplified_schema])
+        init_model = HuggingFaceModel()
+        #print("input text: ", input_text)
+        model_response = init_model.call_translate_model(input_text=input_text)
+        return {
+            "all_tables": {"tables":flattened_tables,  "quantity": len(flattened_tables)}, 
+            "important_tables": {"tables":important_tables,  "quantity": len(important_tables)},
+            "simplified_schema": simplified_schema,
+            "model_response": model_response
+            }
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"An error was ocurred: {e}")
