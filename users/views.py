@@ -55,6 +55,15 @@ async def login(db: db_dependency, form_data: Annotated[OAuth2PasswordRequestFor
 #Obtaining current user details
 @router.get("/me")
 async def get_user(db: db_dependency, user: user_dependency):
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication falied")
-    return {"email": user['email'], "id": user['id']}
+    try:
+        if user is None or user.get("id") is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication falied")
+        user = db.query(User).filter(User.id == user.get("id")).first()
+        user_info = {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email
+        }
+        return JSONResponse(status_code=status.HTTP_200_OK, content=user_info)
+    except Exception as e:
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"{e}"})
