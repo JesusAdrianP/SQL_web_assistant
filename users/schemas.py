@@ -20,3 +20,10 @@ class User(UserBase):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    
+#User schema for update user information
+class UserUpdate(BaseModel):
+    username: str|None = None
+    email: str|None = None
+    password: str|None = None
+    

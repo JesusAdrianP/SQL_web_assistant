@@ -8,7 +8,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 import os
 from dotenv import load_dotenv
-from .schemas import UserBase, UserCreate, Token
+from .schemas import UserBase, UserCreate, Token, UserUpdate
 from fastapi.responses import JSONResponse
 from datetime import datetime, timedelta
 from .auth import authenticate_user, create_access_token, get_current_user, hash_password
@@ -66,4 +66,24 @@ async def get_user(db: db_dependency, user: user_dependency):
         }
         return JSONResponse(status_code=status.HTTP_200_OK, content=user_info)
     except Exception as e:
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"{e}"})
+    
+#update de user information
+@router.put("/update_user")
+async def update_user_info(db:db_dependency, user: user_dependency, updated_info:UserUpdate):
+    try:
+        if user is None or user.get("id") is None:
+            return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"error": "Authentication failed"})
+        user_instance = db.query(User).filter(User.id==user.get("id")).first()
+        if updated_info.username is not None:
+            user_instance.username = updated_info.username
+        if updated_info.email is not None:
+            user_instance.email = updated_info.email
+        if updated_info.password is not None:
+            user_instance.password = hash_password(updated_info.password)
+        db.commit()
+        db.refresh(user_instance)
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "User information updated successfully"})
+    except Exception as e:
+        db.rollback()
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"{e}"})
