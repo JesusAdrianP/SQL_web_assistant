@@ -26,3 +26,4 @@ class UserDbUpdate(BaseModel):
     db_user: Optional[str] = None
     db_host: Optional[str] = None
     db_schema: Optional[str] = None
+    db_password: Optional[str] = None

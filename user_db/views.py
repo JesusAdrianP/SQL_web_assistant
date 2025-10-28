@@ -71,7 +71,16 @@ async def update_user_db(user_db_id: int, db: db_dependency, user: user_dependen
             return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"error": "User database not found"})
         #updating only provided fields
         for field, value in user_db.model_dump(exclude_unset=True).items():
+            if field == "db_password" and value is not None:
+                print("Encrypting password...", value)
+                crypto = CryptoService()
+                field = "encrypted_password"
+                value = crypto.encrypt(value)
+            crypto = CryptoService()
+            print(f"encrypted pass {crypto.decrypt(value)}:", value)
             setattr(user_db_instance, field, value)
+        print("sent fields:", user_db.model_dump(exclude_unset=True) )
+        print("updated fields:", user_db_instance.encrypted_password)
             
         """ user_db_instance.db_name = user_db.db_name
         user_db_instance.db_port = user_db.db_port
