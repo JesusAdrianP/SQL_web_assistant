@@ -61,9 +61,11 @@ async def get_user_dbs(db: db_dependency, user: user_dependency):
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"{e}"})
     
 #Endpoint to update a user database
-@router.put("/update_db/{db_id}", status_code=status.HTTP_200_OK)
+@router.put("/update_db/{user_db_id}", status_code=status.HTTP_200_OK)
 async def update_user_db(user_db_id: int, db: db_dependency, user: user_dependency, user_db: UserDbUpdate):
+    print("received data: ", user_db.model_dump(exclude_unset=True))
     try:
+        print("received data: ", user_db.model_dump(exclude_unset=True))
         if user is None or user.get("id") is None:
             return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"error": "Authentication failed"})
         user_db_instance = db.query(UserDB).filter(UserDB.id == user_db_id, UserDB.user_id == user.get("id")).first()
@@ -82,6 +84,7 @@ async def update_user_db(user_db_id: int, db: db_dependency, user: user_dependen
         db.refresh(user_db_instance)
         return {"message": "User database updated successfully", "db_name": user_db_instance.db_name}
     except Exception as e:
+        print(f"Error: {e}")
         db.rollback()
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"{e}"})
     
@@ -126,7 +129,6 @@ async def get_user_db_by_id(db:db_dependency, user:user_dependency, user_db_id:i
         user_db_instance = db.query(UserDB).filter(UserDB.id == user_db_id, UserDB.user_id == user.get("id")).first()
         if not user_db_instance:
             return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"error": "User database not found"})
-        print("Instance: ", user_db_instance)
         return {
             "id": user_db_instance.id,
             "user_id": user_db_instance.user_id,
