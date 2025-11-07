@@ -61,9 +61,11 @@ async def get_user_dbs(db: db_dependency, user: user_dependency):
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"{e}"})
     
 #Endpoint to update a user database
-@router.put("/update_db/{db_id}", status_code=status.HTTP_200_OK)
+@router.put("/update_db/{user_db_id}", status_code=status.HTTP_200_OK)
 async def update_user_db(user_db_id: int, db: db_dependency, user: user_dependency, user_db: UserDbUpdate):
+    print("received data: ", user_db.model_dump(exclude_unset=True))
     try:
+        print("received data: ", user_db.model_dump(exclude_unset=True))
         if user is None or user.get("id") is None:
             return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"error": "Authentication failed"})
         user_db_instance = db.query(UserDB).filter(UserDB.id == user_db_id, UserDB.user_id == user.get("id")).first()
@@ -71,18 +73,18 @@ async def update_user_db(user_db_id: int, db: db_dependency, user: user_dependen
             return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"error": "User database not found"})
         #updating only provided fields
         for field, value in user_db.model_dump(exclude_unset=True).items():
+            if field == "db_password" and value is not None:
+                print("Encrypting password...", value)
+                crypto = CryptoService()
+                field = "encrypted_password"
+                value = crypto.encrypt(value)
             setattr(user_db_instance, field, value)
-            
-        """ user_db_instance.db_name = user_db.db_name
-        user_db_instance.db_port = user_db.db_port
-        user_db_instance.db_user = user_db.db_user
-        user_db_instance.db_host = user_db.db_host
-        user_db_instance.db_schema = user_db.db_schema"""
         
         db.commit()
         db.refresh(user_db_instance)
         return {"message": "User database updated successfully", "db_name": user_db_instance.db_name}
     except Exception as e:
+        print(f"Error: {e}")
         db.rollback()
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"{e}"})
     
@@ -117,3 +119,25 @@ async def test_db_connection(db_id: int, db: db_dependency):
         return {"message": "Connection successful"}
     except Exception as e:
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"No se pudo conectar a la base de datos: {str(e)}"})
+    
+#endpoint to get user_db by id
+@router.get("/user_db/{user_db_id}", status_code=status.HTTP_200_OK)
+async def get_user_db_by_id(db:db_dependency, user:user_dependency, user_db_id:int):
+    try:
+        if user is None or user.get("id") is None:
+            return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"error": "Authentication failed"})
+        user_db_instance = db.query(UserDB).filter(UserDB.id == user_db_id, UserDB.user_id == user.get("id")).first()
+        if not user_db_instance:
+            return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"error": "User database not found"})
+        return {
+            "id": user_db_instance.id,
+            "user_id": user_db_instance.user_id,
+            "db_name": user_db_instance.db_name,
+            "db_port": user_db_instance.db_port,
+            "db_user": user_db_instance.db_user,
+            "db_host": user_db_instance.db_host,
+            "db_schema": user_db_instance.db_schema
+        }
+    except Exception as e:
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": f"{e}"})
+        
